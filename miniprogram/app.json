@@ -1,0 +1,4 @@
+{
+  "pages": ["pages/schedule/schedule"],
+  "window": {"navigationBarTitleText":"我的周日程表","navigationBarBackgroundColor":"#17243b","navigationBarTextStyle":"white","backgroundColor":"#eef2f8"}
+}

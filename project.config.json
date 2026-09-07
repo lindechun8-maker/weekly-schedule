@@ -1,0 +1,7 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "projectname": "weekly-schedule",
+  "appid": "wx41f6f643840fd36a",
+  "compileType": "miniprogram",
+  "setting": { "es6": true, "minified": true }
+}
