@@ -48,11 +48,25 @@
     .mini-time { display:block; opacity:.85; font-size:8px; margin-bottom:2px; }
     .day-add { border:0; border-top:1px dashed var(--line); border-radius:0; background:#fff; color:#7180a6; padding:7px 0; font-size:13px; }
     .week-reset { width:100%; margin-top:12px; background:#fff0f3; color:#bd3151; border:1px solid #f2c7d1; }
-    @media(max-width:360px){.app{padding:10px 6px}.day-card{min-height:280px}.day-name{font-size:10px}.mini-event{font-size:8px;padding:4px 1px}}  </style>
+    @media(max-width:360px){.app{padding:10px 6px}.day-card{min-height:280px}.day-name{font-size:10px}.mini-event{font-size:8px;padding:4px 1px}}
+    /* 详细横向周课表：手机手势左右滑动，时间与星期固定。 */
+    .phone-week,.week-reset,.mobile-panel,.mobile-add { display:none !important; }
+    .app { max-width:none; padding:12px; }
+    .layout { display:block !important; }
+    .side { display:none !important; }
+    .calendar { display:block; width:100%; border-radius:14px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .week { grid-template-columns:72px repeat(7,96px); min-width:744px; }
+    .head { font-size:13px; padding:11px 2px; }
+    .head:first-child { position:sticky; left:0; z-index:5; }
+    .time { min-height:62px; padding:8px 6px; font-size:12px; position:sticky; left:0; z-index:2; }
+    .cell { min-height:62px; }.event { padding:6px; }.event strong { font-size:13px; }.event span { font-size:11px; }
+    .top-actions { display:flex; gap:8px; align-items:center; }.top-actions button { padding:9px 11px; font-size:13px; white-space:nowrap; }
+    .top-reset { background:#fff0f3; color:#bd3151; border:1px solid #f2c7d1; }
+    @media(max-width:380px){.app{padding:8px}.week{grid-template-columns:66px repeat(7,88px);min-width:682px}.top-actions{gap:5px}.top-actions button{padding:8px 7px;font-size:12px}header h1{font-size:20px}}  </style>
 </head>
 <body>
   <main class="app">
-    <header><div><h1>我的周日程表</h1><p class="sub">手机专用周总览 · 点事项编辑，点“＋”添加。</p></div><button class="primary" id="addBtn">＋ 新增</button></header>
+    <header><div><h1>我的周日程表</h1><p class="sub">完整周课表 · 左右滑动查看每天，点空格新增，点事项编辑。</p></div><div class="top-actions"><button class="top-reset" id="resetTop">恢复学校课程</button><button class="primary" id="addBtn">＋ 新增</button></div></header>
 <section class="phone-week" id="phoneWeek"></section><button class="week-reset" id="weekReset">恢复学校原始课程</button>
     <section class="layout"><div class="calendar"><div class="week" id="calendar"></div></div><aside class="side"><h2>本周安排</h2><p>以课表为基础，安排学习、活动与待办。</p><div class="legend"><span><i class="dot" style="background:#f29217"></i>课程</span><span><i class="dot" style="background:#6170f4"></i>任务</span><span><i class="dot" style="background:#16ad91"></i>个人</span></div><div class="list" id="eventList"></div><button class="secondary" id="resetBtn" style="width:100%;margin-top:16px">恢复学校原始课程</button></aside></section>
     <section class="mobile-panel"><h2>全部安排</h2><p>点选事项可编辑；周视图可左右滑动。</p><div class="list" id="mobileList"></div><button class="secondary" id="mobileReset" style="width:100%;margin-top:16px">恢复学校原始课程</button></section><button class="primary mobile-add" id="mobileAdd">＋ 新增</button>
@@ -79,7 +93,7 @@
     function renderPhone(){phoneWeek.innerHTML=days.map((day,dayIndex)=>{const entries=events.filter(e=>e.day===dayIndex).sort((a,b)=>a.start-b.start);return `<article class="day-card"><button class="day-name" data-day="${dayIndex}">${day.replace('星期','周')}</button><div class="day-events">${entries.map(e=>`<button class="mini-event ${e.type}" data-id="${e.id}"><span class="mini-time">${time(e.start)}</span>${e.title}</button>`).join('')}</div><button class="day-add" data-day="${dayIndex}">＋</button></article>`}).join('');document.querySelectorAll('.mini-event').forEach(x=>x.onclick=()=>open(events.find(e=>e.id===x.dataset.id)));document.querySelectorAll('.day-add,.day-name').forEach(x=>x.onclick=()=>startNew(+x.dataset.day,8));}
     function startNew(day=0,start=8){open(null,day,start)}
     function open(ev,day=0,start=8){$('#form').reset();$('#eventId').value=ev?.id||'';$('#modalTitle').textContent=ev?'编辑安排':'新增安排';$('#deleteBtn').classList.toggle('hidden',!ev);$('#title').value=ev?.title||'';$('#note').value=ev?.note||'';$('#day').value=ev?.day??day;$('#start').value=ev?.start??start;$('#end').value=ev?.end??Math.min(start+1,23);$('#type').value=ev?.type||'task';dialog.showModal();$('#title').focus();}
-    $('#addBtn').onclick=()=>startNew(); $('#cancelBtn').onclick=()=>dialog.close();
+    $('#addBtn').onclick=()=>startNew(); $('#resetTop').onclick=resetToSchoolCourses; $('#cancelBtn').onclick=()=>dialog.close();
     $('#deleteBtn').onclick=()=>{events=events.filter(e=>e.id!==$('#eventId').value);save();render();dialog.close()};
     $('#form').onsubmit=e=>{e.preventDefault();let data={id:$('#eventId').value||crypto.randomUUID(),title:$('#title').value.trim(),note:$('#note').value.trim(),day:+$('#day').value,start:+$('#start').value,end:+$('#end').value,type:$('#type').value};if(data.end<=data.start)return alert('结束时间需要晚于开始时间。');let conflict=events.find(x=>x.id!==data.id&&x.day===data.day&&data.start<x.end&&data.end>x.start);if(conflict&&!confirm(`与「${conflict.title}」时间重叠，仍要保存吗？`))return;let i=events.findIndex(x=>x.id===data.id);i<0?events.push(data):events[i]=data;save();render();dialog.close()};
     function resetToSchoolCourses(){if(confirm('这会删除你新增的任务及对课程的编辑，只保留学校原始课程。')){events=structuredClone(schoolCourses);save();render()}}$('#resetBtn').onclick=resetToSchoolCourses;$('#mobileReset').onclick=resetToSchoolCourses;
