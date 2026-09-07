@@ -8,6 +8,9 @@ create table if not exists public.schedules (
 
 alter table public.schedules enable row level security;
 
+-- 在不公开匿名访问的前提下，仅授权已登录用户，由下方 RLS 策略继续限制到本人。
+grant select, insert, update on table public.schedules to authenticated;
+
 create policy "用户仅可读取自己的日程"
 on public.schedules for select to authenticated
 using (auth.uid() = owner_id);
