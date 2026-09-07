@@ -39,7 +39,7 @@
 <body>
   <main class="app">
     <header><div><h1>我的周日程表</h1><p class="sub">点击空白时间格添加任务；点击已有事项即可编辑。更改会自动保存到本机或云端。</p></div><div style="display:flex;gap:10px"><button class="secondary" id="cloudBtn">☁ 云端同步</button><button class="primary" id="addBtn">＋ 新增任务</button></div></header>
-    <section class="layout"><div class="calendar"><div class="week" id="calendar"></div></div><aside class="side"><h2>本周安排</h2><p>以课表为基础，安排学习、活动与待办。</p><div class="legend"><span><i class="dot" style="background:#f29217"></i>课程</span><span><i class="dot" style="background:#6170f4"></i>任务</span><span><i class="dot" style="background:#16ad91"></i>个人</span></div><div class="list" id="eventList"></div><button class="secondary" id="resetBtn" style="width:100%;margin-top:16px">恢复原始课表</button></aside></section>
+    <section class="layout"><div class="calendar"><div class="week" id="calendar"></div></div><aside class="side"><h2>本周安排</h2><p>以课表为基础，安排学习、活动与待办。</p><div class="legend"><span><i class="dot" style="background:#f29217"></i>课程</span><span><i class="dot" style="background:#6170f4"></i>任务</span><span><i class="dot" style="background:#16ad91"></i>个人</span></div><div class="list" id="eventList"></div><button class="secondary" id="resetBtn" style="width:100%;margin-top:16px">恢复学校原始课程</button></aside></section>
     <section class="mobile-panel"><h2>全部安排</h2><p>点选事项可编辑；周视图可左右滑动。</p><div class="list" id="mobileList"></div></section><button class="primary mobile-add" id="mobileAdd">＋ 新增</button>
   </main>
   <dialog id="editor"><form class="modal" id="form"><h2 id="modalTitle">新增安排</h2><input type="hidden" id="eventId"><div class="field"><label>事项名称</label><input id="title" required placeholder="例如：完成英语作业"></div><div class="twocol"><div class="field"><label>星期</label><select id="day"></select></div><div class="field"><label>类型</label><select id="type"><option value="task">任务</option><option value="personal">个人</option><option value="class">课程</option></select></div></div><div class="twocol"><div class="field"><label>开始时间</label><select id="start"></select></div><div class="field"><label>结束时间</label><select id="end"></select></div></div><div class="field"><label>地点／备注（可选）</label><textarea id="note" placeholder="例如：图书馆 3 楼"></textarea></div><div class="actions"><button class="danger hidden" type="button" id="deleteBtn">删除</button><span></span><div><button class="secondary" type="button" id="cancelBtn">取消</button><button class="primary" type="submit">保存</button></div></div></form></dialog>
@@ -50,10 +50,10 @@
     const key='my-weekly-schedule-v1';
     const cloudClient=window.supabase.createClient('https://dprkhcnsuydavzgvzdge.supabase.co','sb_publishable_LA-zQUJVAPplAHRMkk2X0g_qkR__hna');
     let cloudUser=null, syncTimer=null;
-    const seed=[
+    const schoolCourses=[
       ['c1','10638','EF5042-S01｜LI 1614',3,9,12,'class'],['c2','11555','EF5052-S03｜LI 1614',4,9,12,'class'],['c3','15462','EF5063-S01｜YEUNG LT-1',5,10,12,'class'],['c4','15450','EF5050-S03｜LI 2610',0,13,16,'class'],['c5','14196','EF5560-S01｜YEUNG LT-17',3,15,18,'class'],['c6','11147','EF5250-S61｜LI 1614',3,19,22,'class']
     ].map(([id,title,note,day,start,end,type])=>({id,title,note,day,start,end,type}));
-    let events=JSON.parse(localStorage.getItem(key)||'null')||seed;
+    let events=JSON.parse(localStorage.getItem(key)||'null')||schoolCourses;
     const cal=document.querySelector('#calendar'), list=document.querySelector('#eventList'), mobileList=document.querySelector('#mobileList'), dialog=document.querySelector('#editor');
     const $=s=>document.querySelector(s); const time=h=>String(h).padStart(2,'0')+':00';
     function populate(){ ['day','start','end'].forEach(id=>$('#'+id).innerHTML=''); days.forEach((d,i)=>$('#day').add(new Option(d,i))); hours.forEach(h=>{ $('#start').add(new Option(time(h),h)); $('#end').add(new Option(time(h+1),h+1)); }); }
@@ -64,14 +64,15 @@
     function render(){
       cal.innerHTML='';
       ['时间',...days.map(d=>d.replace('星期','周'))].forEach((d,i)=>cal.insertAdjacentHTML('beforeend',`<div class="head" style="grid-column:${i+1};grid-row:1">${d}</div>`));
-      hours.forEach(h=>{let row=h-6;cal.insertAdjacentHTML('beforeend',`<div class="time" style="grid-column:1;grid-row:${row}">${time(h)}<br>${String(h).padStart(2,'0')}:50</div>`);for(let day=0;day<7;day++){let ev=events.find(e=>e.day===day&&e.start===h);let covered=events.some(e=>e.day===day&&e.start<h&&e.end>h);let cell=document.createElement('div');cell.style.gridColumn=day+2;cell.style.gridRow=ev?`${row} / span ${ev.end-ev.start}`:row;cell.className='cell '+(!covered&&!ev?'empty':'');if(ev){cell.innerHTML=`<div class="event ${ev.type}"><strong>${ev.title}</strong><span>${ev.note||''}</span></div>`;cell.onclick=()=>open(ev)}else if(!covered){cell.onclick=()=>open(null,day,h)} cal.appendChild(cell)}});
+      hours.forEach(h=>{let row=h-6;cal.insertAdjacentHTML('beforeend',`<div class="time" style="grid-column:1;grid-row:${row}">${time(h)}<br>${String(h).padStart(2,'0')}:50</div>`);for(let day=0;day<7;day++){let ev=events.find(e=>e.day===day&&e.start===h);let covered=events.some(e=>e.day===day&&e.start<h&&e.end>h);let cell=document.createElement('div');cell.style.gridColumn=day+2;cell.style.gridRow=ev?`${row} / span ${ev.end-ev.start}`:row;cell.className='cell '+(!covered&&!ev?'empty':'');if(ev){cell.innerHTML=`<div class="event ${ev.type}"><strong>${ev.title}</strong><span>${ev.note||''}</span></div>`;cell.onclick=()=>open(ev)}else if(!covered){cell.onclick=()=>startNew(day,h)} cal.appendChild(cell)}});
       const items=events.sort((a,b)=>a.day-b.day||a.start-b.start).map(e=>`<div class="item" data-id="${e.id}"><b>${e.title}</b><small>${days[e.day]} ${time(e.start)}–${time(e.end)}</small></div>`).join(''); list.innerHTML=items; mobileList.innerHTML=items; document.querySelectorAll('.item').forEach(x=>x.onclick=()=>open(events.find(e=>e.id===x.dataset.id)));
     }
+    function startNew(day=0,start=8){open(null,day,start)}
     function open(ev,day=0,start=8){$('#form').reset();$('#eventId').value=ev?.id||'';$('#modalTitle').textContent=ev?'编辑安排':'新增安排';$('#deleteBtn').classList.toggle('hidden',!ev);$('#title').value=ev?.title||'';$('#note').value=ev?.note||'';$('#day').value=ev?.day??day;$('#start').value=ev?.start??start;$('#end').value=ev?.end??Math.min(start+1,23);$('#type').value=ev?.type||'task';dialog.showModal();$('#title').focus();}
-    $('#addBtn').onclick=()=>open(); $('#mobileAdd').onclick=()=>open(); $('#cancelBtn').onclick=()=>dialog.close();
+    $('#addBtn').onclick=()=>startNew(); $('#mobileAdd').onclick=()=>startNew(); $('#cancelBtn').onclick=()=>dialog.close();
     $('#deleteBtn').onclick=()=>{events=events.filter(e=>e.id!==$('#eventId').value);save();render();dialog.close()};
     $('#form').onsubmit=e=>{e.preventDefault();let data={id:$('#eventId').value||crypto.randomUUID(),title:$('#title').value.trim(),note:$('#note').value.trim(),day:+$('#day').value,start:+$('#start').value,end:+$('#end').value,type:$('#type').value};if(data.end<=data.start)return alert('结束时间需要晚于开始时间。');let conflict=events.find(x=>x.id!==data.id&&x.day===data.day&&data.start<x.end&&data.end>x.start);if(conflict&&!confirm(`与「${conflict.title}」时间重叠，仍要保存吗？`))return;let i=events.findIndex(x=>x.id===data.id);i<0?events.push(data):events[i]=data;save();render();dialog.close()};
-    $('#resetBtn').onclick=()=>{if(confirm('这会清除你新增或修改的所有安排，恢复为图片中的原始课表。')){events=structuredClone(seed);save();render()}};
+    $('#resetBtn').onclick=()=>{if(confirm('这会删除你新增的任务及对课程的编辑，只保留学校原始课程。')){events=structuredClone(schoolCourses);save();render()}};
     populate();render();setupCloud();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
   </script>
