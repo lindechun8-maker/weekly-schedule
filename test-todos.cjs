@@ -76,12 +76,35 @@ const http=require('http'),fs=require('fs'),path=require('path'),assert=require(
   assert.equal((await snapshot()).todos.length,1);
   await page.locator('#todoInput').fill('阅读本周论文');
   await page.locator('#todoAddForm button').click();
+  // Place an existing todo directly into the tapped final time slot.
+  await page.getByRole('button',{name:'星期三 22:00，新增安排',exact:true}).click();
+  assert.equal(await page.locator('#slotTodos .slot-choice').count(),1);
+  assert.match(await page.locator('#slotHeading').innerText(),/星期三 22:00–22:50/);
+  await page.locator('#slotTodos .slot-choice').click();
+  let placed=(await snapshot()).events.find(e=>e.todoId);
+  assert.deepEqual([placed.day,placed.start,placed.end,placed.title],[2,22,23,'阅读本周论文']);
+  assert.equal(await page.locator('#slotPicker').evaluate(e=>e.open),false);
+  await page.reload();
+  await page.getByRole('button',{name:'星期三 21:00，新增安排',exact:true}).click();
+  assert.equal(await page.locator('#slotTodos .slot-choice').count(),0);
+  assert.equal(await page.locator('#slotEmpty').isVisible(),true);
+  await page.locator('#slotNew').click();
+  assert.equal(await page.locator('#day').inputValue(),'2');
+  assert.equal(await page.locator('#start').inputValue(),'21');
+  await page.locator('#cancelBtn').click();
+  await page.getByRole('button',{name:'阅读本周论文，星期三 22:00–22:50，点击编辑',exact:true}).click();
+  await page.locator('#deleteBtn').click();
+  await page.getByRole('button',{name:'星期三 22:00，新增安排',exact:true}).click();
+  assert.equal(await page.locator('#slotTodos .slot-choice').count(),1);
+  await page.locator('#slotCancel').click();
+  assert.equal((await snapshot()).events.length,6);
+
   for(const width of [320,390,430]){
     await page.setViewportSize({width,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'page overflow at '+width);
     await page.locator('.todos').screenshot({path:path.join(process.env.TEMP,'schedule-todos-'+width+'.png')});
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS: migration, add, schedule, two-way edits, literal text, unschedule, completion, reset, conflict, reload, delete, mobile widths 320/390/430.');
+  console.log('PASS: migration, add, schedule, two-way edits, literal text, unschedule, completion, reset, conflict, reload, delete, direct slot fill, picker cancellation, no duplicates, mobile widths 320/390/430.');
  } finally {await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -104,11 +104,12 @@
       .actions button { min-height:44px; padding:10px; }
     }
 
+.slot-choice { display:block; width:100%; min-height:64px; text-align:left; margin:8px 0; overflow-wrap:anywhere; } .slot-choice strong,.slot-choice small { display:block; } .slot-choice small { color:var(--muted); font-size:12px; font-weight:400; margin-top:6px; }
 </style>
 </head>
 <body>
   <main class="app">
-    <header><div><h1>我的周日程表</h1><p class="sub">完整周课表 · 左右滑动查看每天，点空格新增，点事项编辑。</p></div><div class="top-actions"><button class="top-reset" id="resetTop">恢复学校课程</button><button class="primary" id="addBtn">＋ 新增</button></div></header>
+    <header><div><h1>我的周日程表</h1><p class="sub">完整周课表 · 左右滑动查看每天，点空格填入待办，点事项编辑。</p></div><div class="top-actions"><button class="top-reset" id="resetTop">恢复学校课程</button><button class="primary" id="addBtn">＋ 新增</button></div></header>
 <section class="phone-week" id="phoneWeek"></section><button class="week-reset" id="weekReset">恢复学校原始课程</button>
     <section class="layout"><div class="calendar"><div class="week" id="calendar"></div></div><aside class="side"><h2>本周安排</h2><p>以课表为基础，安排学习、活动与待办。</p><div class="legend"><span><i class="dot" style="background:#f29217"></i>课程</span><span><i class="dot" style="background:#6170f4"></i>任务</span><span><i class="dot" style="background:#16ad91"></i>个人</span></div><div class="list" id="eventList"></div><button class="secondary" id="resetBtn" style="width:100%;margin-top:16px">恢复学校原始课程</button></aside></section>
     <section class="mobile-panel"><h2>全部安排</h2><p>点选事项可编辑；周视图可左右滑动。</p><div class="list" id="mobileList"></div><button class="secondary" id="mobileReset" style="width:100%;margin-top:16px">恢复学校原始课程</button></section><button class="primary mobile-add" id="mobileAdd">＋ 新增</button>
@@ -126,6 +127,14 @@
   </main>
   <dialog id="editor"><form class="modal" id="form"><h2 id="modalTitle">新增安排</h2><p id="linkedHint" class="todo-intro" hidden>名称和备注会同步到待办；取消安排后待办仍保留。</p><input type="hidden" id="eventId"><div class="field"><label>事项名称</label><input id="title" required placeholder="例如：完成英语作业"></div><div class="twocol"><div class="field"><label>星期</label><select id="day"></select></div><div class="field"><label>类型</label><select id="type"><option value="task">任务</option><option value="personal">个人</option><option value="class">课程</option></select></div></div><div class="twocol"><div class="field"><label>开始时间</label><select id="start"></select></div><div class="field"><label>结束时间</label><select id="end"></select></div></div><div class="field"><label>地点／备注（可选）</label><textarea id="note" placeholder="例如：图书馆 3 楼"></textarea></div><div class="actions"><button class="danger hidden" type="button" id="deleteBtn">删除</button><span></span><div><button class="secondary" type="button" id="cancelBtn">取消</button><button class="primary" type="submit">保存</button></div></div></form></dialog>
   <dialog id="todoEditor"><form class="modal" id="todoEditForm"><h2>编辑待办</h2><input type="hidden" id="todoEditId"><div class="field"><label for="todoEditTitle">待办名称</label><input id="todoEditTitle" required maxlength="120"></div><div class="field"><label for="todoEditNote">备注（可选）</label><textarea id="todoEditNote"></textarea></div><p class="todo-intro">已安排的待办，名称与备注会同时更新到日程。</p><div class="actions"><button type="button" class="danger" id="todoDelete">删除</button><div><button type="button" class="secondary" id="todoEditCancel">取消</button><button class="primary" type="submit">保存</button></div></div></form></dialog>
+
+  <dialog id="slotPicker" aria-labelledby="slotHeading"><div class="modal">
+    <h2 id="slotHeading"></h2>
+    <p class="todo-intro">点一条待办，直接填入这个时间格。填入后可点日程修改时长。</p>
+    <div id="slotTodos"></div>
+    <p id="slotEmpty" class="todo-intro" hidden>暂无未安排的待办，可以先在下方待办清单添加。</p>
+    <div class="actions"><button id="slotCancel" type="button" class="secondary">取消</button><button id="slotNew" type="button" class="primary">＋ 新建事项</button></div>
+  </div></dialog>
 
   <script src="./app.js"></script>
 </body>

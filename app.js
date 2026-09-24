@@ -67,7 +67,7 @@ function render(){
       else{
         cell.tabIndex=0;cell.setAttribute('role','button');
         cell.setAttribute('aria-label',days[day]+' '+time(h)+'，新增安排');
-        cell.onclick=()=>openEvent(null,day,h);
+        cell.onclick=()=>openSlot(day,h);
         cell.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cell.click();}};
       }
       cal.append(cell);
@@ -105,6 +105,30 @@ function todoRow(todo){
   }));
   return row;
 }
+function openSlot(day,start){
+  const picker=$('#slotPicker');
+  $('#slotHeading').textContent=period({day,start,end:start+1});
+  const available=state.todos.filter(t=>!t.done&&!linkedEvent(t));
+  $('#slotEmpty').hidden=available.length>0;
+  $('#slotTodos').replaceChildren(...available.map(todo=>{
+    const choice=button('','slot-choice secondary',()=>{
+      // Recheck before saving so a stale selection cannot duplicate a task.
+      const current=state.todos.find(t=>t.id===todo.id);
+      if(!current||current.done||linkedEvent(current))return;
+      if(state.events.some(e=>e.day===day&&start<e.end&&start+1>e.start)){
+        alert('这个时间格已有安排，请重新选择。');picker.close();return;
+      }
+      const event={id:crypto.randomUUID(),todoId:current.id,title:current.title,note:current.note||'',day,start,end:start+1,type:'task'};
+      if(persist({...state,events:[...state.events,event]}))picker.close();
+    });
+    choice.append(element('strong','',todo.title),element('small','','填入这个时间格'));
+    return choice;
+  }));
+  $('#slotNew').onclick=()=>{picker.close();openEvent(null,day,start);};
+  $('#slotCancel').onclick=()=>picker.close();
+  picker.showModal();
+}
+
 function openEvent(ev,day=0,start=8,todo=null){
   editingTodoId=ev?.todoId||todo?.id||null;
   $('#form').reset();$('#eventId').value=ev?.id||'';
